@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Sunucu özeti · HomeLab</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='panel.css') }}">
+  </head>
+  <body class="dashboard-body">
+    <aside class="sidebar">
+      <a class="brand" href="{{ url_for('panel') }}">
+        <span class="brand-mark" aria-hidden="true">H<span>.</span></span>
+        <span class="brand-copy"><strong>Home</strong><small>LAB</small></span>
+      </a>
+      <p class="nav-heading">ÇALIŞMA ALANI</p>
+      <nav class="side-nav" aria-label="Ana gezinme">
+        <a class="nav-link active" href="#overview"><span class="nav-icon">⌂</span>Genel bakış</a>
+        <a class="nav-link" href="#containers"><span class="nav-icon">▦</span>Uygulamalar <span class="nav-count">{{ services|length }}</span></a>
+        <a class="nav-link" href="#system"><span class="nav-icon">⌁</span>Sistem servisleri</a>
+        <a class="nav-link" href="#storage"><span class="nav-icon">▤</span>Disk ve yedekleme</a>
+        <a class="nav-link" href="{{ url_for('readonly_console') }}"><span class="nav-icon">›_</span>Salt okunur konsol</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-host">
+          <span class="host-pulse" aria-hidden="true"></span>
+          <span><strong>{{ host.hostname }}</strong><small>HomeLab sunucusu</small></span>
+        </div>
+        <form method="post" action="{{ url_for('logout') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="sidebar-logout" type="submit"><span aria-hidden="true">↪</span> Oturumu kapat</button>
+        </form>
+      </div>
+    </aside>
+
+    <div class="dashboard-content">
+      <header class="topbar">
+        <div class="breadcrumb"><span>HomeLab</span><span class="breadcrumb-separator">/</span><strong>Genel bakış</strong></div>
+        <div class="topbar-meta"><span class="live-indicator"><i></i> SUNUCU TAKİPTE</span><span class="topbar-date">{{ host.captured_at }}</span></div>
+      </header>
+
+      <main class="dashboard-main">
+        <section id="overview" class="welcome-row">
+          <div>
+            <p class="eyebrow"><span></span> SUNUCU YÖNETİMİ</p>
+            <h1>Genel bakış</h1>
+            <p class="panel-description">Sunucu sağlığını, çalışan uygulamaları ve yedekleme durumunu buradan takip et.</p>
+          </div>
+          <a class="refresh-button" href="{{ url_for('panel') }}" aria-label="Durumları yenile"><span aria-hidden="true">↻</span> Yenile</a>
+        </section>
+
+        {% if message %}
+          <p class="notice" role="status">{{ message }}</p>
+        {% endif %}
+
+        <section class="metric-grid" aria-label="Sunucu kaynakları">
+          <article class="metric-card">
+            <div class="metric-heading"><span class="metric-icon cpu-icon">⌁</span><span>İŞLEMCİ</span><span class="metric-live">CANLI</span></div>
+            {% if host.cpu_percent is not none %}
+              <p class="metric-value">{{ host.cpu_percent }}<small>%</small></p>
+              <progress class="meter-progress" value="{{ host.cpu_percent }}" max="100" aria-label="İşlemci kullanımı yüzde {{ host.cpu_percent }}"></progress>
+              <p class="metric-caption">Anlık işlemci kullanımı</p>
+            {% else %}
+              <p class="metric-unavailable">Ölçüm alınamadı</p><p class="metric-caption">Sistem metriği kullanılamıyor</p>
+            {% endif %}
+          </article>
+          <article class="metric-card">
+            <div class="metric-heading"><span class="metric-icon memory-icon">▥</span><span>BELLEK</span><span class="metric-live">CANLI</span></div>
+            {% if host.memory.percent is not none %}
+              <p class="metric-value">{{ host.memory.percent }}<small>%</small></p>
+              <progress class="meter-progress progress-blue" value="{{ host.memory.percent }}" max="100" aria-label="Bellek kullanımı yüzde {{ host.memory.percent }}"></progress>
+              <p class="metric-caption">{{ host.memory.used }} kullanılıyor <span>·</span> {{ host.memory.total }} toplam</p>
+            {% else %}
+              <p class="metric-unavailable">Ölçüm alınamadı</p><p class="metric-caption">Sistem metriği kullanılamıyor</p>
+            {% endif %}
+          </article>
+          <article class="metric-card">
+            <div class="metric-heading"><span class="metric-icon service-icon">▦</span><span>UYGULAMALAR</span><span class="metric-live">DOCKER</span></div>
+            <p class="metric-value">{{ running_services }}<small class="metric-total">/ {{ services|length }}</small></p>
+            <progress class="meter-progress progress-purple" value="{{ running_services }}" max="{{ services|length if services else 1 }}" aria-label="{{ running_services }} çalışan Docker servisi"></progress>
+            <p class="metric-caption">Çalışır durumdaki konteynerler</p>
+          </article>
+          <article class="metric-card">
+            <div class="metric-heading"><span class="metric-icon uptime-icon">◷</span><span>ÇALIŞMA SÜRESİ</span><span class="metric-live">SİSTEM</span></div>
+            <p class="uptime-value">{{ host.uptime or "Bilinmiyor" }}</p>
+            <p class="metric-caption">Son sistem açılışından bu yana</p>
+          </article>
+        </section>
+
+        <section id="containers" class="section-block">
+          <div class="section-heading">
+            <div><p class="eyebrow"><span></span> DOCKER</p><h2>Uygulamalar</h2></div>
+            <span class="section-meta">{{ running_services }} / {{ services|length }} çalışıyor</span>
+          </div>
+          {% if services %}
+            <div class="application-grid">
+              {% for service in services %}
+                {% set healthy = service.status == "running" %}
+                <article class="application-card">
+                  <div class="application-top">
+                    <span class="app-symbol app-{{ service.id }}" aria-hidden="true">
+                      {% if service.id == "dockge" %}D{% elif service.id == "n8n" %}n8{% elif service.id == "filebrowser" %}F{% elif service.id == "ollama" %}O{% elif service.id == "scrutiny" %}S{% elif service.id == "caddy" %}C{% elif service.id == "adguardhome" %}A{% elif service.id == "beszel-agent" %}B{% else %}{{ service.label[:1] }}{% endif %}
+                    </span>
+                    <span class="status-pill {{ 'status-good' if healthy else 'status-down' }}"><i></i>{{ "Çalışıyor" if healthy else ("Bulunamadı" if service.status == "not-found" else service.status) }}</span>
+                  </div>
+                  <h3>{{ service.label }}</h3>
+                  <p class="app-container">{{ service.container }}</p>
+                  <div class="application-bottom">
+                    <a class="logs-link" href="{{ url_for('service_logs', service_id=service.id) }}">Günlükler <span aria-hidden="true">↗</span></a>
+                    <div class="service-actions" aria-label="{{ service.label }} işlemleri">
+                      {% if 'start' in service.actions %}
+                        <form method="post" action="{{ url_for('control_service', service_id=service.id, action='start') }}">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          <button class="icon-action" type="submit" title="Başlat" aria-label="{{ service.label }} başlat">▶</button>
+                        </form>
+                      {% endif %}
+                      {% if 'restart' in service.actions %}
+                        <form method="post" action="{{ url_for('control_service', service_id=service.id, action='restart') }}">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          <button class="icon-action" type="submit" title="Yeniden başlat" aria-label="{{ service.label }} yeniden başlat">↻</button>
+                        </form>
+                      {% endif %}
+                      {% if 'stop' in service.actions %}
+                        <form method="post" action="{{ url_for('control_service', service_id=service.id, action='stop') }}">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          <button class="icon-action stop-action" type="submit" title="Durdur" aria-label="{{ service.label }} durdur">■</button>
+                        </form>
+                      {% endif %}
+                      {% if not service.actions %}<span class="read-only-label">Salt okunur</span>{% endif %}
+                    </div>
+                  </div>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <section class="empty-panel"><h3>Henüz servis eklenmedi</h3><p>Servis tanımları kurulum sırasında hazırlanır.</p></section>
+          {% endif %}
+        </section>
+
+        <section class="lower-grid">
+          <div id="system" class="section-block system-block">
+            <div class="section-heading compact-heading">
+              <div><p class="eyebrow"><span></span> LINUX MINT</p><h2>Sistem servisleri</h2></div>
+            </div>
+            <div class="system-service-list">
+              {% for service in system_services %}
+                {% set active = service.status == "active" %}
+                <div class="system-service-row">
+                  <span class="system-service-mark {{ 'system-mark-active' if active else '' }}" aria-hidden="true">{{ "✓" if active else "—" }}</span>
+                  <span class="system-service-name">{{ service.label }}<small>{{ service.unit }}</small></span>
+                  <span class="status-pill {{ 'status-good' if active else 'status-neutral' }}"><i></i>{{ "Aktif" if active else ("Başarısız" if service.status == "failed" else "Kapalı") }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div id="storage" class="section-block storage-block">
+            <div class="section-heading compact-heading">
+              <div><p class="eyebrow"><span></span> DEPOLAMA</p><h2>Disk ve yedekleme</h2></div>
+            </div>
+            <div class="disk-list">
+              {% for disk, label, mount in [
+                (host.root_disk, "Sistem diski", "/"),
+                (host.homelab_disk, "HomeLab alanı", "/srv/homelab")
+              ] %}
+                <div class="disk-item">
+                  <div class="disk-label-row"><span>{{ label }}</span><strong>{{ disk.percent ~ "%" if disk else "Bilinmiyor" }}</strong></div>
+                  <progress class="meter-progress progress-purple disk-meter" value="{{ disk.percent if disk else 0 }}" max="100" aria-label="{{ label }} yüzde {{ disk.percent if disk else 0 }} dolu"></progress>
+                  <p class="disk-detail">{{ mount }} <span>·</span> {{ disk.free ~ " boş / " ~ disk.total if disk else "Disk bilgisi alınamadı" }}</p>
+                </div>
+              {% endfor %}
+            </div>
+            <div class="backup-note">
+              <span class="backup-icon" aria-hidden="true">↗</span>
+              <div><strong>Restic yedekleme</strong>
+                <p>
+                  {% if backup.result == "success" %}Son yedek başarılı · {{ backup.last_run }}
+                  {% elif backup.result == "failed" %}Son yedek başarısız · günlükleri incele
+                  {% elif backup.status == "active" %}Zamanlayıcı etkin · henüz tamamlanmış yedek kaydı yok
+                  {% else %}Henüz etkin değil veya yapılandırılmamış
+                  {% endif %}
+                </p>
+              </div>
+              <span class="status-pill {{ 'status-down' if backup.result == 'failed' else ('status-good' if backup.status == 'active' else 'status-neutral') }}"><i></i>{{ "Hata" if backup.result == "failed" else ("Etkin" if backup.status == "active" else "Kapalı") }}</span>
+            </div>
+            <p class="storage-footnote">Son yenileme {{ host.captured_at }} · değerler sayfa yenilendiğinde güncellenir</p>
+          </div>
+        </section>
+
+        <footer class="dashboard-footer"><span>HomeLab <span class="footer-dot">·</span> Özel yönetim alanı</span><span>Sunucu: {{ host.hostname }}</span></footer>
+      </main>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+# Root-owned allowlist helper. No user-supplied paths or shell commands.
+[[ $# -eq 2 ]] || exit 64
+SERVICE="$1"
+ACTION="$2"
+case "$SERVICE" in
+  n8n) FILE=/srv/homelab/compose/ai/compose.yaml; NAME=n8n ;;
+  ollama) FILE=/srv/homelab/compose/ai/compose.yaml; NAME=ollama ;;
+  filebrowser) FILE=/srv/homelab/compose/cloud/compose.yaml; NAME=filebrowser ;;
+  uptime-kuma) FILE=/srv/homelab/compose/monitoring/compose.yaml; NAME=uptime-kuma ;;
+  beszel) FILE=/srv/homelab/compose/monitoring/compose.yaml; NAME=beszel ;;
+  beszel-agent) FILE=/srv/homelab/compose/monitoring-agent/compose.yaml; NAME=beszel-agent; ENV_FILE=/srv/homelab/compose/monitoring-agent/.env ;;
+  dockge) FILE=/srv/homelab/compose/dockge/compose.yaml; NAME=dockge ;;
+  scrutiny) FILE=/srv/homelab/compose/storage/compose.yaml; NAME=scrutiny ;;
+  caddy) FILE=/srv/homelab/compose/web/compose.yaml; NAME=caddy ;;
+  ntfy) FILE=/srv/homelab/compose/notify/compose.yaml; NAME=ntfy ;;
+  adguardhome) FILE=/srv/homelab/compose/adguard/compose.yaml; NAME=adguardhome; ENV_FILE=/srv/homelab/compose/adguard/.env ;;
+  *) exit 65 ;;
+esac
+ENV_ARGS=()
+if [[ -n "${ENV_FILE:-}" && -f "$ENV_FILE" ]]; then ENV_ARGS=(--env-file "$ENV_FILE"); fi
+case "$ACTION" in
+  status)
+    docker inspect --format '{{.State.Status}}' "$NAME" 2>/dev/null || printf 'not-found\n'
+    ;;
+  logs)
+    docker logs --tail 100 --timestamps "$NAME" 2>&1
+    ;;
+  start)
+    [[ "$SERVICE" != dockge ]] || exit 66
+    docker compose "${ENV_ARGS[@]}" -f "$FILE" up -d "$NAME"
+    ;;
+  stop)
+    [[ "$SERVICE" != dockge ]] || exit 66
+    docker compose "${ENV_ARGS[@]}" -f "$FILE" stop "$NAME"
+    ;;
+  restart)
+    [[ "$SERVICE" != dockge ]] || exit 66
+    docker compose "${ENV_ARGS[@]}" -f "$FILE" restart "$NAME"
+    ;;
+  *) exit 64 ;;
+esac

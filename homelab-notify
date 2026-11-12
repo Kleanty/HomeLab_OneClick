@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Kullanım: homelab-notify "Başlık" "Mesaj" [öncelik 1-5] [etiket,etiket]
+# ntfy yapılandırılmamışsa sessizce çıkar.
+set -uo pipefail
+CONF=/etc/homelab-installer/ntfy.env
+[[ -r "$CONF" ]] || exit 0
+# shellcheck disable=SC1090
+source "$CONF"
+TITLE="${1:-HomeLab}"; MSG="${2:-}"; PRIO="${3:-3}"; TAGS="${4:-}"
+[[ -n "$MSG" ]] || exit 0
+[[ "$PRIO" =~ ^[1-5]$ ]] || PRIO=3
+PAYLOAD="$(python3 -c 'import json,sys; print(json.dumps({"topic":sys.argv[1],"title":sys.argv[2],"message":sys.argv[3],"priority":int(sys.argv[4]),"tags":[t for t in sys.argv[5].split(",") if t]}))' \
+  "$NTFY_TOPIC" "$TITLE" "$MSG" "$PRIO" "$TAGS")" || exit 1
+curl -fsS --max-time 10 -K - -H "Content-Type: application/json" -d "$PAYLOAD" "$NTFY_URL" >/dev/null <<CURLCFG || { echo "ntfy bildirimi gönderilemedi." >&2; exit 1; }
+user = "${NTFY_USER}:${NTFY_PASSWORD}"
+CURLCFG

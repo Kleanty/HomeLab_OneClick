@@ -1,0 +1,130 @@
+[
+  {
+    "id": "ntfy",
+    "label": "ntfy Bildirim",
+    "container": "ntfy",
+    "compose_file": "/srv/homelab/compose/notify/compose.yaml",
+    "compose_service": "ntfy",
+    "actions": [
+      "start",
+      "stop",
+      "restart"
+    ]
+  },
+  {
+    "id": "n8n",
+    "label": "n8n",
+    "container": "n8n",
+    "compose_file": "/srv/homelab/compose/ai/compose.yaml",
+    "compose_service": "n8n",
+    "actions": [
+      "start",
+      "stop",
+      "restart"
+    ]
+  },
+  {
+    "id": "ollama",
+    "label": "Ollama",
+    "container": "ollama",
+    "compose_file": "/srv/homelab/compose/ai/compose.yaml",
+    "compose_service": "ollama",
+    "actions": [
+      "start",
+      "stop",
+      "restart"
+    ]
+  },
+  {
+    "id": "filebrowser",
+    "label": "File Browser",
+    "container": "filebrowser",
+    "compose_file": "/srv/homelab/compose/cloud/compose.yaml",
+    "compose_service": "filebrowser",
+    "actions": [
+      "start",
+      "stop",
+      "restart"
+    ]
+  },
+  {
+    "id": "uptime-kuma",
+    "label": "Uptime Kuma",
+    "container": "uptime-kuma",
+    "compose_file": "/srv/homelab/compose/monitoring/compose.yaml",
+    "compose_service": "uptime-kuma",
+    "actions": [
+      "start",
+      "stop",
+      "restart"
+    ]
+  },
+  {
+    "id": "beszel",
+    "label": "Beszel",
+    "container": "beszel",
+    "compose_file": "/srv/homelab/compose/monitoring/compose.yaml",
+    "compose_service": "beszel",
+    "actions": [
+      "start",
+      "stop",
+      "restart"
+    ]
+  },
+  {
+    "id": "beszel-agent",
+    "label": "Beszel Agent",
+    "container": "beszel-agent",
+    "compose_file": "/srv/homelab/compose/monitoring-agent/compose.yaml",
+    "compose_service": "beszel-agent",
+    "actions": [
+      "start",
+      "stop",
+      "restart"
+    ]
+  },
+  {
+    "id": "dockge",
+    "label": "Dockge",
+    "container": "dockge",
+    "compose_file": "/srv/homelab/compose/dockge/compose.yaml",
+    "compose_service": "dockge",
+    "actions": []
+  },
+  {
+    "id": "scrutiny",
+    "label": "Scrutiny Disk Sağlığı",
+    "container": "scrutiny",
+    "compose_file": "/srv/homelab/compose/storage/compose.yaml",
+    "compose_service": "scrutiny",
+    "actions": [
+      "start",
+      "stop",
+      "restart"
+    ]
+  },
+  {
+    "id": "caddy",
+    "label": "Caddy Web Sunucusu",
+    "container": "caddy",
+    "compose_file": "/srv/homelab/compose/web/compose.yaml",
+    "compose_service": "caddy",
+    "actions": [
+      "start",
+      "stop",
+      "restart"
+    ]
+  },
+  {
+    "id": "adguardhome",
+    "label": "AdGuard Home",
+    "container": "adguardhome",
+    "compose_file": "/srv/homelab/compose/adguard/compose.yaml",
+    "compose_service": "adguardhome",
+    "actions": [
+      "start",
+      "stop",
+      "restart"
+    ]
+  }
+]

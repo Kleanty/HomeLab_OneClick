@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Docker'ın yayınladığı (published) portlara yalnızca yerel ağ, Tailscale ve loopback
+# kaynaklarından yeni bağlantı kabul eder. İnternet kaynaklı yeni bağlantılar düşürülür.
+# Kullanım: homelab-docker-lan-only apply|remove
+# Not: Yalnızca Docker'ın yönlendirdiği (forward) trafiği etkiler; SSH/Samba gibi ana makine
+# servislerini ve UFW'yi değiştirmez.
+set -Eeuo pipefail
+CHAIN=HOMELAB-LAN-ONLY
+ACTION="${1:-apply}"
+command -v iptables >/dev/null 2>&1 || { echo "iptables bulunamadı." >&2; exit 1; }
+
+remove_rules() {
+  while iptables -w -D DOCKER-USER -j "$CHAIN" 2>/dev/null; do :; done
+  iptables -w -F "$CHAIN" 2>/dev/null || true
+  iptables -w -X "$CHAIN" 2>/dev/null || true
+}
+
+case "$ACTION" in
+  remove) remove_rules; exit 0 ;;
+  apply) ;;
+  *) echo "Kullanım: $0 apply|remove" >&2; exit 64 ;;
+esac
+
+iptables -w -n -L DOCKER-USER >/dev/null 2>&1 || {
+  echo "DOCKER-USER zinciri bulunamadı; Docker çalışmıyor veya iptables kullanmıyor." >&2
+  exit 1
+}
+remove_rules
+iptables -w -N "$CHAIN"
+iptables -w -A "$CHAIN" -m conntrack --ctstate RELATED,ESTABLISHED -j RETURN
+for NET in 127.0.0.0/8 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 100.64.0.0/10 169.254.0.0/16; do
+  iptables -w -A "$CHAIN" -s "$NET" -j RETURN
+done
+iptables -w -A "$CHAIN" -j DROP
+iptables -w -I DOCKER-USER 1 -j "$CHAIN"
+echo "Docker portları yalnızca yerel ağ/Tailscale kaynaklarına açık."

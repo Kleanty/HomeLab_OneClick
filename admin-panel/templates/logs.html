@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>{{ service.label }} günlükleri · HomeLab</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='panel.css') }}">
+  </head>
+  <body>
+    <header class="panel-header">
+      <a class="brand" href="{{ url_for('panel') }}">
+        <span class="brand-mark" aria-hidden="true">H<span>.</span></span>
+        <span>HomeLab</span>
+      </a>
+      <a class="logout-button back-link" href="{{ url_for('panel') }}">← Panele dön</a>
+    </header>
+    <main class="panel-main">
+      <p class="eyebrow"><span></span> SERVİS GÜNLÜKLERİ</p>
+      <h1>{{ service.label }}</h1>
+      <p class="panel-description">{{ service.container }} · Docker konteynerinden son 100 kayıt</p>
+      {% if logs is none %}
+        <p class="error" role="alert">Günlükler alınamadı. Docker servisinin ve tanımlı yönetim yardımcısının çalıştığını kontrol et.</p>
+      {% elif logs %}
+        <pre class="log-output">{{ logs }}</pre>
+      {% else %}
+        <section class="empty-panel logs-empty">
+          <h2>Henüz günlük kaydı yok</h2>
+          <p>Servis henüz günlük üretmemiş olabilir veya konteyner henüz günlük üretmemiş olabilir.</p>
+        </section>
+      {% endif %}
+    </main>
+  </body>
+</html>

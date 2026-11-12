@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Salt okunur konsol · HomeLab</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='panel.css') }}">
+  </head>
+  <body class="dashboard-body">
+    <aside class="sidebar">
+      <a class="brand" href="{{ url_for('panel') }}">
+        <span class="brand-mark" aria-hidden="true">H<span>.</span></span>
+        <span class="brand-copy"><strong>Home</strong><small>LAB</small></span>
+      </a>
+      <p class="nav-heading">ÇALIŞMA ALANI</p>
+      <nav class="side-nav" aria-label="Ana gezinme">
+        <a class="nav-link" href="{{ url_for('panel') }}#overview"><span class="nav-icon">⌂</span>Genel bakış</a>
+        <a class="nav-link" href="{{ url_for('panel') }}#containers"><span class="nav-icon">▦</span>Uygulamalar <span class="nav-count">{{ services|length }}</span></a>
+        <a class="nav-link" href="{{ url_for('panel') }}#system"><span class="nav-icon">⌁</span>Sistem servisleri</a>
+        <a class="nav-link" href="{{ url_for('panel') }}#storage"><span class="nav-icon">▤</span>Disk ve yedekleme</a>
+        <a class="nav-link active" href="{{ url_for('readonly_console') }}"><span class="nav-icon">›_</span>Salt okunur konsol</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-host">
+          <span class="host-pulse" aria-hidden="true"></span>
+          <span><strong>{{ host.hostname }}</strong><small>HomeLab sunucusu</small></span>
+        </div>
+        <form method="post" action="{{ url_for('logout') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="sidebar-logout" type="submit"><span aria-hidden="true">↪</span> Oturumu kapat</button>
+        </form>
+      </div>
+    </aside>
+
+    <div class="dashboard-content">
+      <header class="topbar">
+        <div class="breadcrumb"><span>HomeLab</span><span class="breadcrumb-separator">/</span><strong>Salt okunur konsol</strong></div>
+        <div class="topbar-meta"><span class="live-indicator"><i></i> YALNIZCA OKUMA</span><span class="topbar-date">{{ host.captured_at }}</span></div>
+      </header>
+
+      <main class="dashboard-main">
+        <section class="welcome-row">
+          <div>
+            <p class="eyebrow"><span></span> GÜVENLİ DURUM RAPORU</p>
+            <h1>Salt okunur sunucu konsolu</h1>
+            <p class="panel-description">Sunucu ve servislerin tanımlı durum kontrollerini tek ekranda görüntüle.</p>
+          </div>
+          <a class="refresh-button" href="{{ url_for('readonly_console') }}" aria-label="Raporu yenile"><span aria-hidden="true">↻</span> Yenile</a>
+        </section>
+
+        <div class="console-notice" role="note">
+          <strong>Güvenlik sınırı</strong>
+          <p>Bu ekran komut kabul etmez. Yalnızca kod içinde sabitlenmiş, salt okunur sunucu ve servis kontrollerini gösterir; hiçbir servisi değiştirmez.</p>
+        </div>
+
+        <section class="console-card" aria-label="Sunucu durum raporu">
+          <div class="console-titlebar">
+            <span class="console-lights" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span>home-server · durum raporu</span>
+            <span class="console-readonly">READ ONLY</span>
+          </div>
+          <pre class="console-output">{{ report }}</pre>
+        </section>
+
+        <footer class="dashboard-footer"><span>HomeLab <span class="footer-dot">·</span> Salt okunur yönetim</span><span>Sunucu: {{ host.hostname }}</span></footer>
+      </main>
+    </div>
+  </body>
+</html>
